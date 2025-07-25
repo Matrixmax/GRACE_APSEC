@@ -55,7 +55,7 @@ import git
 
 #     data = load_dataset(f"GRACE/dataset/hf_datasets/repobench_{language}_v1.1")
 
-#     # data = load_dataset("/data/wxl/graphrag4se/GRACE/dataset/hf_datasets/repobench_python_v1.1")
+#     # data = load_dataset("graphrag4se/GRACE/dataset/hf_datasets/repobench_python_v1.1")
 
 #     print("loaded ")
 
@@ -90,7 +90,7 @@ def get_all_samples_from_repo(repo_name, dataset):
 
 def download_repo(repo):
     file_name = repo.split("/")[-1]
-    repo_folder = f"/data/wxl/graphrag4se/GRACE/dataset/hf_datasets/repobench_{language}_v1.1/{settings[0]}/repos"
+    repo_folder = f"dataset/hf_datasets/repobench_{language}_v1.1/{settings[0]}/repos"
     
     # Check if repo_folder exists, if not create it
     if not os.path.exists(repo_folder):
@@ -118,7 +118,7 @@ if __name__ =="__main__":
 
     unique_repo_names = set()
 
-    data = load_dataset(f"/data/wxl/graphrag4se/GRACE/dataset/hf_datasets/repobench_{language}_v1.1")
+    data = load_dataset(f"dataset/hf_datasets/repobench_{language}_v1.1")
 
     for sample in data[settings[0]]:
         unique_repo_names.add(sample["repo_name"])

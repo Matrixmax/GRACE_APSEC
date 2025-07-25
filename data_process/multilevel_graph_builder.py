@@ -8,7 +8,6 @@ import logging
 import matplotlib.pyplot as plt
 from staticfg import CFGBuilder
 import astroid
-# from pydeps.py2depgraph import py2dep  # 不再使用pydeps
 from mypy import build
 from mypy.nodes import MypyFile
 import json

@@ -36,12 +36,12 @@ class CONSTANTS:
     max_search_top_k = 10
     max_statement = 20
  
-    repo_base_dir = f"/data/wby/allcode/repohyper/GRACE/dataset/hf_datasets/repobench_python_v1.1/cross_file_first/repos"
-    graph_database_save_dir = f"/data/wby/allcode/GraphCoder-main/repobench/context_database"
-    query_graph_save_dir = "/data/wby/allcode/GraphCoder-main/repobench/graph_based_query"
-    search_results_save_dir= "/data/wby/allcode/GraphCoder-main/repobench/search_results"
-    generate_save_dir = "/data/wby/allcode/GraphCoder-main/repobench/generation_results"
-    dataset_dir = "/data/wby/allcode/GraphCoder-main/repobench/repobench_to_repoeval"
+    repo_base_dir = f"dataset/hf_datasets/repobench_python_v1.1/cross_file_first/repos"
+    graph_database_save_dir = f"dataset/hf_datasets/repobench_python_v1.1/cross_file_first/repos_graphs_labeled_link_with_called_imported_edges"
+    query_graph_save_dir = "dataset/hf_datasets/repobench_python_v1.1/cross_file_first/repos_call_graphs"
+    search_results_save_dir= "dataset/hf_datasets/repobench_python_v1.1/cross_file_first/repos_search_results"
+    generate_save_dir = "dataset/hf_datasets/repobench_python_v1.1/cross_file_first/repos_generation_results"
+    dataset_dir = "dataset/hf_datasets/repobench_python_v1.1/cross_file_first/repos"
     repos = os.listdir(repo_base_dir)
     repos_language =  {item: "python" for item in repos}
 

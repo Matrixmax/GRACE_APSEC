@@ -110,7 +110,7 @@ def main(args, input_cases, responses_save_name):
                     generated_content = response_dict['choices'][0]['message']['content']
                     response = generated_content
                 except Exception as e:
-                    path = f"/data/wby/allcode/GraphCoder-main/repobench/generation_results/gpt-3.5-turbo/cross_file_first.gen_res111.jsonl"
+                    path = f"generation_results/gpt-3.5-turbo/cross_file_first.gen_res111.jsonl"
                     make_needed_dir(path)
                     dump_jsonl(responses, path)
                     return
@@ -148,7 +148,7 @@ def main(args, input_cases, responses_save_name):
                     )
                     response=response['message']['content']
                 except Exception as e:
-                    path=f"/data/wby/allcode/repohyper/GRACE/dataset/dataset_repoeval_updated/repoeval_to_repobench/generate_result/cross_file_random_gen_res111.jsonl"
+                    path=f"dataset/dataset_repoeval_updated/repoeval_to_repobench/generate_result/cross_file_random_gen_res111.jsonl"
                     make_needed_dir(path)
                     dump_jsonl(responses,path)
                     return
@@ -163,12 +163,12 @@ def main(args, input_cases, responses_save_name):
 if __name__ == "__main__":
     args = parser_args()
 
-    input_cases = load_jsonl("/data/wby/allcode/repohyper/GRACE/dataset/dataset_repoeval_updated/repoeval_to_repobench/grace_serach/line_python_search_results.jsonl")
+    input_cases = load_jsonl("dataset/dataset_repoeval_updated/repoeval_to_repobench/grace_serach/line_python_search_results.jsonl")
     #input_cases=input_cases[1400:]
 
     print('Input loading finished')
 
-    responses_save_name = f"/data/wby/allcode/repohyper/GRACE/dataset/dataset_repoeval_updated/repoeval_to_repobench/generate_result/cross_file_random_gen_res.jsonl"
+    responses_save_name = f"dataset/dataset_repoeval_updated/repoeval_to_repobench/generate_result/cross_file_random_gen_res.jsonl"
     make_needed_dir(responses_save_name)
     main(args, input_cases, responses_save_name)
 

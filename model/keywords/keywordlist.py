@@ -1,6 +1,3 @@
-# Original Copyright 2021 Microsoft under MIT License.
-# From https://github.com/microsoft/dpu-utils/blob/master/python/dpu_utils/codeutils/keywords/keywordlist.py
-
 import os
 import keyword
 from functools import lru_cache

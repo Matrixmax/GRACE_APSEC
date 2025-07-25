@@ -1,17 +1,3 @@
-# Copyright Amazon.com, Inc. or its affiliates. All rights reserved.
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-
 import argparse
 import json
 import logging
@@ -310,7 +296,7 @@ if __name__ == "__main__":
     parser.add_argument("--only_compute_metric", default=True, type=bool, help="only compute metric")
     parser.add_argument("--task", type=str, default="line_completion", help="task name")
     args = parser.parse_args()
-    args.prompt_file = f"/data/wby/allcode/cceval/data/crosscodeeval/{args.language}/{args.task}.jsonl"
+    args.prompt_file = f"dataset/dataset_crosscodeeval/data/{args.language}/{args.task}.jsonl"
     args.output_dir = f"results/crosscodeeval/{args.language}/grace/"
 
     set_seed(args.seed, device_specific=False)

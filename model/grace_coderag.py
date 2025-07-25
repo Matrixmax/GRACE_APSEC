@@ -1002,13 +1002,9 @@ def main():
     parser.add_argument('--alpha', type=float, default=0.5, help='Weight for code vs graph similarity')
     parser.add_argument('--device', type=str, default='cuda:3' if torch.cuda.is_available() else 'cpu', help='Device to use for model')
 
-    # parser.add_argument('--repo-graph-path', type=str,  default='/data/wby/allcode/repohyper/GRACE/dataset/dataset_crosscodeeval/data/python/graphs', help='Path to the repository')
-    # parser.add_argument('--repo-path', type=str,  default='/data/wby/allcode/repohyper/GRACE/dataset/dataset_crosscodeeval/repos', help='Path to the repository')
-    # parser.add_argument('--index-path', type=str,  default='/data/wby/allcode/repohyper/GRACE/dataset/dataset_crosscodeeval/data/python/index', help='Path to store/load HNSW indexes')
     
     args = parser.parse_args()
 
-    # args.dataset_root = Path(f"/data/wby/allcode/repohyper/GRACE/dataset/{args.dataset}")
     args.dataset_root = Path(f"dataset/{args.dataset}")
     args.repo_path = args.dataset_root / "repos"
     args.raw_dataset_root = args.dataset_root / "rawdata"/args.language

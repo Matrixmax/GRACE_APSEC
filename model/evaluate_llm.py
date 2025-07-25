@@ -22,7 +22,7 @@ task = "pipeline"
 settings = ["cross_file_first"]
 
 # cross_file_first_hard = load_data(task, language, "cross_file_first")["test"]["hard"]
-cross_file_first_hard = load_dataset(f"/data/wxl/graphrag4se/GRACE/dataset/hf_datasets/repobench_{language}_v1.1",split=['cross_file_first'])[0]
+cross_file_first_hard = load_dataset(f"dataset/hf_datasets/repobench_{language}_v1.1",split=['cross_file_first'])[0]
 
 def finding_context(contexts_files, relative_path):
     for file in contexts_files:
@@ -119,7 +119,7 @@ def evaluate_model(model_name, retrieved_contexts):
 
 def main():
     parser = argparse.ArgumentParser(description='Evaluate LLM model')
-    parser.add_argument('--data', default="/data/wxl/graphrag4se/GRACE/dataset/hf_datasets/repobench_python_v1.1/cross_file_first/repos_graphs_labeled_link_with_called_imported_edges/3D-DAM_labeled.pkl", type=str, help='Path to the data')
+    parser.add_argument('--data', default="dataset/hf_datasets/repobench_python_v1.1/cross_file_first/repos_graphs_labeled_link_with_called_imported_edges/3D-DAM_labeled.pkl", type=str, help='Path to the data')
     parser.add_argument('--model', default="gpt3.5", type=str, help='Model name')
     parser.add_argument('--num-workers', type=int, default=1, help='Number of workers')
 
@@ -133,10 +133,10 @@ def main():
         print(f"Data path {data_path} does not exist.")
         return
     # retrieved_contexts = load_data(args.data, language, "retrieved_contexts")
-    # retrieved_contexts = load_dataset(f"/data/wxl/graphrag4se/GRACE/dataset/hf_datasets/repobench_{language}_v1.1")
+    # retrieved_contexts = load_dataset(f"dataset/hf_datasets/repobench_{language}_v1.1")
     # TEMP
 
-    contexts_files = parse_source("/data/wxl/graphrag4se/GRACE/dataset/hf_datasets/repobench_python_v1.1/cross_file_first/repos/3D-DAM", "/data/wxl/graphrag4se/GRACE/dataset/hf_datasets/repobench_python_v1.1/cross_file_first/repos_call_graphs/3D-DAM.json")
+    contexts_files = parse_source("dataset/hf_datasets/repobench_python_v1.1/cross_file_first/repos/3D-DAM", "dataset/hf_datasets/repobench_python_v1.1/cross_file_first/repos_call_graphs/3D-DAM.json")
 
     # file = finding_context(contexts_files, "3d-dam/variational/study_test.py")
     # print(file)
