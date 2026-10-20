@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+*.egg-info/
+
+# Data, repositories, and generated artifacts (not redistributed with the code)
+dataset/
+results/
+runs/
+pretrain_models/
+*.graphml
+*.bin
+*.npy
+*.npz
+*.pt
+*.tar.gz
+
+# Secrets
+.env
+*.key
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

@@ -2,8 +2,17 @@
 
 import networkx as nx
 
-# from . import name_dictionaries
-import name_dictionaries
+import sys
+from pathlib import Path
+
+try:  # imported as model.graph_text_encoders
+    from . import name_dictionaries
+except ImportError:  # imported with model/ on sys.path (legacy scripts)
+    import name_dictionaries
+
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 
 def create_node_string(name_dict, nnodes: int) -> str:
@@ -345,3 +354,24 @@ def encode_code_graph(graph: nx.Graph, node_encoder: str = None, edge_encoder: s
             out_lines.append(f"  ({src}) {arrow}[{e_type}]{arrow} ({dst})")
  
     return "\n".join(out_lines) + "\n"
+
+
+def encode_code_graph_paper_format(graph: nx.Graph, node_order=None) -> str:
+    """Serialize a graph in the paper format (appendix): ``NODE(id, type, "code")`` records followed by
+    ``EDGE(source, relation, target)`` records. Virtual query-evidence edges carry ``relation="align"``.
+
+    This delegates to :func:`grace.serialize.serialize_graph`; :func:`encode_code_graph` above is the
+    legacy format and is kept for compatibility with older outputs.
+    """
+    from grace.serialize import serialize_graph
+
+    if not isinstance(graph, nx.MultiDiGraph):
+        multi = nx.MultiDiGraph()
+        multi.add_nodes_from(graph.nodes(data=True))
+        for src, dst, edata in graph.edges(data=True):
+            data = dict(edata)
+            data.setdefault("relation", data.get("type", "linked"))
+            multi.add_edge(src, dst, **data)
+        graph = multi
+    text, _ = serialize_graph(graph, node_order)
+    return text

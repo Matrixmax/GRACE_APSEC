@@ -1,0 +1,47 @@
+# Test configuration: small values that let the unit tests and synthetic end-to-end runs finish quickly.
+# Values under test_overrides replace the inherited ones. Outputs carry config_name=dev_smoke_test.
+config_name: dev_smoke_test
+inherits: paper_reproduction.yaml
+
+test_overrides:
+  gamma: 0.0
+  gat_layers: 2
+  gat_heads: 2
+  gat_hidden_dim: 16
+  gat_dropout: 0.0
+  gat_edge_type_mode: relation_attention_bias
+  gat_add_reverse_edges: true
+  graph_pooling: mean
+  subgraph_hops: 1
+  type_compatibility: same_node_type_or_reference
+  infonce_temperature: 0.1
+  optimizer: adam
+  learning_rate: 0.001
+  weight_decay: 0.0
+  batch_size: 2
+  max_epochs: 1
+  early_stopping_patience: 1
+  num_random_negatives: 2
+  num_hard_negatives: 2
+  train_queries_per_repo: 4
+  mmr_lambda: 0.5
+  random_seed: 0
+  prompt_tokenizer: regex
+  llm_temperature: omit
+  llm_top_p: omit
+  llm_seed: omit
+  system_prompt: ""
+
+implementation:
+  device: cpu
+
+llm:
+  models:
+    mock-model:
+      provider: mock
+      model_id: mock-model
+      aliases: []
+  providers:
+    mock:
+      base_url: http://localhost.invalid/v1
+      api_key_env: GRACE_MOCK_API_KEY

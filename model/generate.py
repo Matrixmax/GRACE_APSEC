@@ -14,7 +14,7 @@ import json
 import requests
 import ollama
 
-device = "cuda"
+from utils.utils import device  # GRACE_DEVICE or automatic selection
 
 
 def build_retrieval_prompt(case, tokenizer, max_num_tokens, max_top_k):
@@ -45,7 +45,9 @@ def main(args, input_cases, responses_save_name):
     # set model and tokenizer
     if args.model == 'gpt-3.5-turbo':
 
-        model = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"),base_url="https://api.chatanywhere.tech/v1/chat/completions")
+        # Endpoint is configurable; the released script hard-coded a third-party relay (kept as fallback).
+        model = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"),
+                              base_url=os.getenv("OPENAI_BASE_URL", "https://api.chatanywhere.tech/v1/chat/completions"))
 
         tokenizer = CodexTokenizer()
         max_num_tokens = 4096

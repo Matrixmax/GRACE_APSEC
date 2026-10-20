@@ -6,7 +6,19 @@ import os
 from networkx.readwrite import json_graph
 import tiktoken
 
-device = "cuda"
+def _default_device() -> str:
+    """GRACE_DEVICE overrides; otherwise CUDA when available, else CPU (no hard-coded GPU index)."""
+    if os.environ.get("GRACE_DEVICE"):
+        return os.environ["GRACE_DEVICE"]
+    try:
+        import torch
+
+        return "cuda" if torch.cuda.is_available() else "cpu"
+    except ImportError:
+        return "cpu"
+
+
+device = _default_device()
 
 
 class CodeGenTokenizer:

@@ -1,0 +1,119 @@
+# GRACE configuration.
+#
+# Sections:
+#   paper_reported          settings stated in the paper; source lines are given next to each value.
+#   method_hyperparameters  indexing, fusion, structural encoder, training, retrieval and decoding.
+#   implementation          I/O, retries and device selection.
+#   llm                     providers and model ids of the LLM backbones.
+#
+# A stage that needs a value set to null stops until it is supplied with `--set key=value`.
+# Every output records config_name and a snapshot of all values (`<output>.config.json`, training meta).
+config_name: paper_reproduction
+
+paper_reported:
+  # sec_experiments_emnlp_main.tex, "Implementation Setup" paragraph (line 11), unless noted otherwise.
+  context_tokens: 2048                      # "input window is fixed at 2,048 tokens"
+  retrieved_context_tokens: 1024            # "split evenly between retrieved and local context"
+  local_context_tokens: 1024
+  max_new_tokens: 100                       # "maximum generation length of 100 tokens"
+  candidate_pool_size_Kc: 10                # "at most K_c=10 candidate snippets or subgraphs"
+  fused_subgraphs_Kf: 3                     # "top K_f=3"; also sec_appendix_extended_experiments.tex:25
+  theta: 0.4                                # "The attention threshold theta is 0.4"
+  hnsw_M: 32                                # "HNSW (M=32, ef_search=256)"
+  hnsw_ef_search: 256
+  code_encoder: Salesforce/codet5p-110m-embedding   # "codet5p-110m-embedding"
+  # Snippet embedding width of the encoder and number of Laplacian eigenvectors in v_s (methodology);
+  # together they give the 261-d graph index.
+  code_embedding_dim: 256
+  laplacian_pe_dim: 5
+
+method_hyperparameters:
+  # --- indexing
+  hnsw_ef_construction: 400
+  code_encoder_max_length: 512
+  # --- fusion
+  # alpha_i^F is a softmax over the K_f retrieved subgraphs, so with gamma=0.5 at most one subgraph
+  # passes the threshold per query.
+  gamma: 0.5
+  # --- structural encoder f_theta
+  gat_layers: 2                  # L
+  gat_heads: 4
+  gat_hidden_dim: 256            # d
+  gat_dropout: 0.1
+  gat_edge_type_mode: relation_attention_bias
+  gat_add_reverse_edges: true
+  graph_pooling: mean            # pooling for h_G
+  subgraph_hops: 1               # hops around a function/class centre that form a retrieval unit
+  type_compatibility: same_node_type_or_reference   # TypeCompatible rule for align edges
+  # --- InfoNCE training
+  infonce_temperature: 0.07
+  optimizer: adamw
+  learning_rate: 0.001
+  weight_decay: 0.01
+  batch_size: 16
+  max_epochs: 20
+  early_stopping_patience: 3
+  num_random_negatives: 8
+  num_hard_negatives: 8
+  train_queries_per_repo: 50     # used when training queries are sampled automatically
+  # --- retrieval
+  mmr_lambda: 0.7
+  random_seed: 42
+  # --- prompting / decoding
+  prompt_tokenizer: tiktoken:o200k_base   # one tokenizer for every backbone
+  llm_temperature: 0.0
+  llm_top_p: omit                # not sent; provider default
+  llm_seed: omit                 # not sent
+  system_prompt: ""              # no system message
+
+implementation:
+  device: auto                   # auto | cpu | cuda | cuda:N
+  embedding_batch_size: 32
+  alpha_mode: learned_gate       # learned_gate (paper) | fixed (ablation, needs fixed_alpha)
+  fixed_alpha: null
+  parse_failure_policy: first_code_line   # first_code_line | empty   (see README)
+  on_api_error: skip             # skip (written to failures.jsonl) | record_empty
+  llm_max_retries: 3
+  llm_retry_backoff_seconds: 2.0
+  llm_timeout_seconds: 120
+
+llm:
+  # Backbones named in the paper: GPT-4o mini, Qwen2.5-Coder-14B and DeepSeek-V3.
+  providers:
+    openai:
+      base_url: https://api.openai.com/v1
+      api_key_env: OPENAI_API_KEY
+    dashscope:
+      base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      api_key_env: DASHSCOPE_API_KEY
+    deepseek:
+      base_url: https://api.deepseek.com
+      api_key_env: DEEPSEEK_API_KEY
+    siliconflow:
+      base_url: https://api.siliconflow.cn/v1
+      api_key_env: SILICONFLOW_API_KEY
+  models:
+    gpt-4o-mini:
+      provider: openai
+      model_id: gpt-4o-mini
+      aliases: [gpt40-mini]      # CLI spelling of the evaluation scripts
+    gpt3.5:
+      provider: openai
+      model_id: gpt-3.5-turbo
+      aliases: []
+    qwen2.5-coder-14b-instruct:
+      provider: dashscope
+      model_id: qwen2.5-coder-14b-instruct
+      aliases: []
+    qwen2.5-coder-3b-instruct:
+      provider: dashscope
+      model_id: qwen2.5-coder-3b-instruct
+      aliases: []
+    qwen-coder-turbo:
+      provider: dashscope
+      model_id: qwen-coder-turbo
+      aliases: []
+    deepseek-v3:
+      provider: deepseek
+      model_id: deepseek-chat    # DeepSeek V3-series chat model
+      aliases: []

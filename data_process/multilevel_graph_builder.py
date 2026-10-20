@@ -1382,145 +1382,145 @@ class MultiLevelJavaGraphBuilder:
                     idx += 1
 
 
-        def _build_dfg(self):
-            try:
-                import javalang
-            except ImportError:
-                logging.error("javalang not installed. DFG will not be built.")
-                return
-                
-            for java_file in self.repo_path.rglob('*.java'):
-                try:
-                    with open(java_file, 'r', encoding='utf-8') as f:
-                        content = f.read()
-                    
-                    try:
-                        tree = javalang.parse.parse(content)
-                    except Exception as e:
-                        logging.warning(f"Failed to parse {java_file}: {e}")
-                        continue
-                    
-                    self._extract_data_flow(tree, java_file)
-                    
-                except Exception as e:
-                    logging.warning(f"Failed to process DFG for {java_file}: {e}")
-        
-        def _extract_data_flow(self, tree, java_file):
-            file_rel_path = str(java_file.relative_to(self.repo_path))
-            variable_defs = {}
-            
-            for path, node in tree:
-                if isinstance(node, javalang.tree.VariableDeclarator):
-                    var_name = node.name
-                    var_uid = f"dfg:{file_rel_path}:{var_name}_def"
-                    
-                    if not self.graphs.dfg.has_node(var_uid):
-                        self.graphs.dfg.add_node(var_uid, code=var_name)
-                    
-                    variable_defs[var_name] = var_uid
-                
-                elif isinstance(node, javalang.tree.MemberReference):
-                    if node.member in variable_defs:
-                        use_uid = f"dfg:{file_rel_path}:{node.member}_use_{id(node)}"
-                        if not self.graphs.dfg.has_node(use_uid):
-                            self.graphs.dfg.add_node(use_uid, code=node.member)
-                        
-                        self.graphs.dfg.add_edge(variable_defs[node.member], use_uid)
-
-        def build_combined_graph(self):
-            self.combined_graph = nx.DiGraph()
-            self.graphs.combined_graph = self.combined_graph
-            
-            for graph_name, graph in [
-                ('folder_structure', self.graphs.folder_structure),
-                ('cross_file_deps', self.graphs.cross_file_deps),
-                ('call_graph', self.graphs.call_graph),
-                ('type_deps', self.graphs.type_deps),
-                ('ast', self.graphs.ast),
-                ('cfg', self.graphs.cfg),
-                ('dfg', self.graphs.dfg)
-            ]:
-                for node in graph.nodes():
-                    node_attrs = graph.nodes[node].copy()
-                    node_attrs['graph_type'] = graph_name
-                    node_attrs['original_id'] = node
-                    
-                    self.combined_graph.add_node(f"{graph_name}:{node}", **node_attrs)
-                
-                for src, dst in graph.edges():
-                    self.combined_graph.add_edge(f"{graph_name}:{src}", 
-                                            f"{graph_name}:{dst}",
-                                            edge_type=f"internal_{graph_name}")
-            self._connect_java_repo_to_module_level()
-            self._connect_java_module_to_function_level()
-            
-            return self.combined_graph
-
-        def _connect_java_repo_to_module_level(self):
+    def _build_dfg(self):
+        try:
             import javalang
-
-            # 1. 文件 → 方法 (file_location_constraint)
-            for file_node in self.graphs.folder_structure.nodes():
-                if not str(file_node).endswith('.java'):
-                    continue
-                file_path = self.repo_path / file_node
+        except ImportError:
+            logging.error("javalang not installed. DFG will not be built.")
+            return
+            
+        for java_file in self.repo_path.rglob('*.java'):
+            try:
+                with open(java_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
                 try:
-                    content = file_path.read_text(encoding='utf-8', errors='ignore')
                     tree = javalang.parse.parse(content)
-                    for _, md in tree.filter(javalang.tree.MethodDeclaration):
-                        method_name = md.name
-                        if self.graphs.call_graph.has_node(method_name):
-                            self.combined_graph.add_edge(
-                                f"folder_structure:{file_node}",
-                                f"call_graph:{method_name}",
-                                edge_type="file_location_constraint"
-                            )
                 except Exception as e:
-                    logging.debug(f"Skip parsing {file_path}: {e}")
+                    logging.warning(f"Failed to parse {java_file}: {e}")
+                    continue
+                
+                self._extract_data_flow(tree, java_file)
+                
+            except Exception as e:
+                logging.warning(f"Failed to process DFG for {java_file}: {e}")
+    
+    def _extract_data_flow(self, tree, java_file):
+        file_rel_path = str(java_file.relative_to(self.repo_path))
+        variable_defs = {}
+        
+        for path, node in tree:
+            if isinstance(node, javalang.tree.VariableDeclarator):
+                var_name = node.name
+                var_uid = f"dfg:{file_rel_path}:{var_name}_def"
+                
+                if not self.graphs.dfg.has_node(var_uid):
+                    self.graphs.dfg.add_node(var_uid, code=var_name)
+                
+                variable_defs[var_name] = var_uid
+            
+            elif isinstance(node, javalang.tree.MemberReference):
+                if node.member in variable_defs:
+                    use_uid = f"dfg:{file_rel_path}:{node.member}_use_{id(node)}"
+                    if not self.graphs.dfg.has_node(use_uid):
+                        self.graphs.dfg.add_node(use_uid, code=node.member)
+                    
+                    self.graphs.dfg.add_edge(variable_defs[node.member], use_uid)
 
-            for src_file, _ in self.graphs.cross_file_deps.edges():
-                for caller in self.graphs.call_graph.nodes():
-                    self.combined_graph.add_edge(
-                        f"cross_file_deps:{src_file}",
-                        f"call_graph:{caller}",
-                        edge_type="cross_module_call"
-                    )
+    def build_combined_graph(self):
+        self.combined_graph = nx.DiGraph()
+        self.graphs.combined_graph = self.combined_graph
+        
+        for graph_name, graph in [
+            ('folder_structure', self.graphs.folder_structure),
+            ('cross_file_deps', self.graphs.cross_file_deps),
+            ('call_graph', self.graphs.call_graph),
+            ('type_deps', self.graphs.type_deps),
+            ('ast', self.graphs.ast),
+            ('cfg', self.graphs.cfg),
+            ('dfg', self.graphs.dfg)
+        ]:
+            for node in graph.nodes():
+                node_attrs = graph.nodes[node].copy()
+                node_attrs['graph_type'] = graph_name
+                node_attrs['original_id'] = node
+                
+                self.combined_graph.add_node(f"{graph_name}:{node}", **node_attrs)
+            
+            for src, dst in graph.edges():
+                self.combined_graph.add_edge(f"{graph_name}:{src}", 
+                                        f"{graph_name}:{dst}",
+                                        edge_type=f"internal_{graph_name}")
+        self._connect_java_repo_to_module_level()
+        self._connect_java_module_to_function_level()
+        
+        return self.combined_graph
 
-            for src_file, _ in self.graphs.cross_file_deps.edges():
-                for type_src, _ in self.graphs.type_deps.edges():
-                    self.combined_graph.add_edge(
-                        f"cross_file_deps:{src_file}",
-                        f"type_deps:{type_src}",
-                        edge_type="type_cross_file_reference"
-                    )
+    def _connect_java_repo_to_module_level(self):
+        import javalang
 
-        def _connect_java_module_to_function_level(self):
-            for func_node in self.graphs.call_graph.nodes():
-                for ast_node in self.graphs.ast.nodes():
-                    self.combined_graph.add_edge(
-                        f"call_graph:{func_node}",
-                        f"ast:{ast_node}",
-                        edge_type="method_body_structure"
-                    )
-                    break
+        # 1. 文件 → 方法 (file_location_constraint)
+        for file_node in self.graphs.folder_structure.nodes():
+            if not str(file_node).endswith('.java'):
+                continue
+            file_path = self.repo_path / file_node
+            try:
+                content = file_path.read_text(encoding='utf-8', errors='ignore')
+                tree = javalang.parse.parse(content)
+                for _, md in tree.filter(javalang.tree.MethodDeclaration):
+                    method_name = md.name
+                    if self.graphs.call_graph.has_node(method_name):
+                        self.combined_graph.add_edge(
+                            f"folder_structure:{file_node}",
+                            f"call_graph:{method_name}",
+                            edge_type="file_location_constraint"
+                        )
+            except Exception as e:
+                logging.debug(f"Skip parsing {file_path}: {e}")
 
+        for src_file, _ in self.graphs.cross_file_deps.edges():
+            for caller in self.graphs.call_graph.nodes():
+                self.combined_graph.add_edge(
+                    f"cross_file_deps:{src_file}",
+                    f"call_graph:{caller}",
+                    edge_type="cross_module_call"
+                )
+
+        for src_file, _ in self.graphs.cross_file_deps.edges():
             for type_src, _ in self.graphs.type_deps.edges():
-                for dfg_src, _ in self.graphs.dfg.edges():
-                    self.combined_graph.add_edge(
-                        f"type_deps:{type_src}",
-                        f"dfg:{dfg_src}",
-                        edge_type="variable_type_constraint"
-                    )
-                    break
+                self.combined_graph.add_edge(
+                    f"cross_file_deps:{src_file}",
+                    f"type_deps:{type_src}",
+                    edge_type="type_cross_file_reference"
+                )
 
-            for func_node in self.graphs.call_graph.nodes():
-                for cfg_node in self.graphs.cfg.nodes():
-                    self.combined_graph.add_edge(
-                        f"call_graph:{func_node}",
-                        f"cfg:{cfg_node}",
-                        edge_type="method_control_flow"
-                    )
-                    break
+    def _connect_java_module_to_function_level(self):
+        for func_node in self.graphs.call_graph.nodes():
+            for ast_node in self.graphs.ast.nodes():
+                self.combined_graph.add_edge(
+                    f"call_graph:{func_node}",
+                    f"ast:{ast_node}",
+                    edge_type="method_body_structure"
+                )
+                break
+
+        for type_src, _ in self.graphs.type_deps.edges():
+            for dfg_src, _ in self.graphs.dfg.edges():
+                self.combined_graph.add_edge(
+                    f"type_deps:{type_src}",
+                    f"dfg:{dfg_src}",
+                    edge_type="variable_type_constraint"
+                )
+                break
+
+        for func_node in self.graphs.call_graph.nodes():
+            for cfg_node in self.graphs.cfg.nodes():
+                self.combined_graph.add_edge(
+                    f"call_graph:{func_node}",
+                    f"cfg:{cfg_node}",
+                    edge_type="method_control_flow"
+                )
+                break
 
 
 def preprocess_repobench_data(data_sample, repo_path, temp_repo_path):
@@ -1632,89 +1632,90 @@ def visualize_and_save_graphs(graphs, output_dir):
     save_and_visualize_graph(graphs.combined_graph, "combined_graph", file_ext=".graphml", figsize=(100, 100))
 
 
-def main(dataset_name,language):
+def legacy_sample_id(idx: int, repo_name: str) -> str:
+    """Directory name used by the released scripts: ``<idx>_<repository basename>``."""
+    return f"{idx}_{repo_name.split('/')[-1]}"
+
+
+def main(dataset_name, language, dataset_root=None, data_file=None, repos_root=None, graphs_dir=None,
+         limit=None):
+    """Build one leakage-masked legacy multi-level graph per benchmark sample.
+
+    Changes relative to the released script (see README):
+
+    * ``crosscodeeval`` and ``repoeval_updated`` (alias ``repoeval-updated``) use the field mapping in
+      ``grace.data`` (the released loop referenced an undefined ``repo_full_name``).
+    * Python and Java are both supported via ``--language``.
+    * Before building, the current file is cut at the cursor (target line and post-cursor suffix are
+      removed, ``grace.leakage``). The builder runs on a temporary masked copy of the repository.
+
+    The ``grace`` pipeline (``python -m grace.cli build-graphs``) uses ``grace.graph_builder``
+    instead of this builder; this entry point produces the earlier graph format.
+    """
+    import sys
+    import tempfile
+
+    root_dir = Path(__file__).resolve().parent.parent
+    if str(root_dir) not in sys.path:
+        sys.path.insert(0, str(root_dir))
+    from grace.data import canonical_dataset, default_data_file, load_tasks
+    from grace.leakage import make_masked_snapshot, materialize_masked_repo, read_repo_sources
+
     logging.basicConfig(level=logging.INFO)
-    print("start")
-    print(f"dataset_name: {dataset_name}, language: {language}")
-
-    if dataset_name == "repoeval-updated":
-        repo_path = Path(f"dataset/dataset_repoeval_updated/repos")
-        repo_root = Path(f"dataset/dataset_repoeval_updated/repoeval_to_repobench")
-        dataset=load_jsonl(f"{repo_root}/line_level.python.test.jsonl")
-        
-    elif dataset_name == "crosscodeeval":
-        repo_path = Path(f"dataset/crosscodeeval/repos")
-        repo_root = Path(f"dataset/crosscodeeval/")
-        dataset=load_jsonl(f"{repo_root}/rawdata/{language}/line_completion.jsonl")
-
-    else:
-        print(f"Unknown dataset name: {dataset_name}")
-        return
-    
-
-    processed_dir = repo_root / "processed"
-    processed_dir.mkdir(parents=True, exist_ok=True)
-    
-    graphs_dir = repo_root / "graphs"
+    dataset_name = canonical_dataset(dataset_name)
+    logging.info("dataset_name: %s, language: %s", dataset_name, language)
+    dataset_root = Path(dataset_root or f"dataset/{dataset_name}")
+    data_file = data_file or default_data_file(dataset_name, str(dataset_root), language)
+    repos_root = Path(repos_root or dataset_root / "repos")
+    graphs_dir = Path(graphs_dir or dataset_root / "graphs")
     graphs_dir.mkdir(parents=True, exist_ok=True)
-    
-    if dataset is None:
-        logging.error("No dataset provided for processing")
-        return
-    
-    logging.info(f"Processing {len(dataset)} samples from dataset")
-    
-    processed_count = 0
-    skipped_count = 0
-    error_count = 0
-            
-    for idx, sample in enumerate(dataset):
-        if dataset_name == "crosscodeeval":
-            repo_name = sample['metadata']['repository']
-            
-        elif dataset_name == "repoeval_updated":
-            repo_author, repo_name = repo_full_name.split('/')
-        temp_repo_path = repo_root / 'temp' / f"{repo_name}"
-        
-        sample_id = f"{idx}_{repo_name}"
-        sample_processed_dir = processed_dir / sample_id
-        sample_processed_dir.mkdir(parents=True, exist_ok=True)
-        sample_graph_dir = graphs_dir / sample_id
-        sample_graph_dir.mkdir(parents=True, exist_ok=True)
 
-        if (sample_graph_dir / "repo_multi_graph.graphml").exists():
-            print(f"Sample {sample_id} has already been processed, skipping...")
+    tasks = load_tasks(dataset_name, data_file, language, str(repos_root))
+    if limit:
+        tasks = tasks[:limit]
+    logging.info("Processing %d samples from %s", len(tasks), data_file)
+
+    processed_count = skipped_count = error_count = 0
+    sources_key, sources = None, {}
+    for idx, task in enumerate(tasks):
+        sample_graph_dir = graphs_dir / legacy_sample_id(idx, task.repo_name)
+        target = sample_graph_dir / "repo_multi_graph.graphml"
+        if target.exists():
+            logging.info("Sample %s has already been processed, skipping", sample_graph_dir.name)
+            skipped_count += 1
             continue
-
-
-        try:    
-            graphs = process_repo_to_graph(str(repo_path/repo_name), lang=language)
-
-            nx.write_graphml_lxml(graphs.combined_graph, sample_graph_dir / "repo_multi_graph.graphml")
-            
+        if task.repo_dir is None:
+            logging.error("No repository snapshot for %s under %s", task.repo_name, repos_root)
+            error_count += 1
+            continue
+        try:
+            if sources_key != task.repo_dir:
+                sources_key, sources = task.repo_dir, read_repo_sources(task.repo_dir, language)
+            snapshot = make_masked_snapshot(task, sources)
+            with tempfile.TemporaryDirectory(prefix="grace_masked_") as tmp:
+                masked_repo = materialize_masked_repo(task.repo_dir, snapshot, tmp)
+                graphs = process_repo_to_graph(masked_repo, lang=language)
+            sample_graph_dir.mkdir(parents=True, exist_ok=True)
+            nx.write_graphml_lxml(graphs.combined_graph, target)
             processed_count += 1
-            logging.info(f"Successfully processed sample {idx}")
-            
-            if idx % 10 == 0 and idx > 0:
-                logging.info(f"Progress: {idx}/{len(dataset)} samples processed")
-                
         except Exception as e:
             error_count += 1
-            logging.error(f"Failed to process sample {idx}: {str(e)}")
-    
-    logging.info(f"Finished processing dataset")
-    logging.info(f"Total samples: {len(dataset)}")
-    logging.info(f"Successfully processed: {processed_count}")
-    logging.info(f"Skipped: {skipped_count}")
-    logging.info(f"Errors: {error_count}")
+            logging.error("Failed to process sample %d: %s", idx, e)
 
+    logging.info("Finished: total=%d processed=%d skipped=%d errors=%d", len(tasks), processed_count,
+                 skipped_count, error_count)
 
 
 if __name__ == "__main__":
-    # main("crosscodeeval","python")
     parser = argparse.ArgumentParser()
-    parser.add_argument("dataset_name", choices=["crosscodeeval", "repoeval-updated"])
-    parser.add_argument("language",choices=["python", "java"])
+    parser.add_argument("dataset_name", choices=["crosscodeeval", "repoeval_updated", "repoeval-updated"])
+    parser.add_argument("language", choices=["python", "java"])
+    parser.add_argument("--dataset-root", default=None, help="default: dataset/<dataset_name>")
+    parser.add_argument("--data-file", default=None)
+    parser.add_argument("--repos-root", default=None, help="default: <dataset-root>/repos")
+    parser.add_argument("--graphs-dir", default=None, help="default: <dataset-root>/graphs")
+    parser.add_argument("--limit", type=int, default=None)
     args = parser.parse_args()
 
-    main(args.dataset_name, args.language)
+    main(args.dataset_name, args.language, args.dataset_root, args.data_file, args.repos_root, args.graphs_dir,
+         args.limit)
